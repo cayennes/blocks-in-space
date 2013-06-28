@@ -26,6 +26,15 @@
 
 ;; Block manipulation
 
+(def blocks
+  (let [shapes [#{[0 0 0]}
+                #{[0 0 0] [1 0 0]}
+                #{[0 0 0] [1 0 0] [-1 0 0]}
+                #{[0 0 0] [1 0 0] [0 1 0]}]]
+    (map (fn [s] {:center [0 0 0] :shape s}) shapes)))
+
+(defn random-block [] (rand-nth blocks))
+
 (defn block-cubes
   "Return the set of locations of cubes in the block"
   [block]
@@ -35,8 +44,7 @@
   [block]
   (not-any? wall-cubes (block-cubes block)))
 
-(def example-block (atom {:center [0 0 0] :shape #{[0 0 0] [1 0 0] [0 1 0] [1 -1 0]}}
-                         :validator legal?))
+(def current-block (atom (random-block) :validator legal?))
 
 (defn rotate-block
   "Rotate the given block one of: :clockwise :counterclockwise :north :east :south :west"
@@ -61,6 +69,10 @@
                       :down (fn [[x y z]] [x y (dec z)])}]
       (assoc block :center ((movement-fns direction) (:center block)))))
 
+(defn next-block
+  []
+  (reset! current-block (random-block)))
+
 ;; Input
 
 (def rotation-keybindings
@@ -78,15 +90,16 @@
    \j :west
    \space :down})
 
-(defn handle-key-press []
+(defn handle-key-press [] ; TODO: this has too much logic
   (let [key-char (qc/raw-key)
         rotation (rotation-keybindings key-char)
         motion (motion-keybindings key-char)]
     (try
       (cond
-        rotation (swap! example-block #(rotate-block % rotation))
-        motion (swap! example-block #(move-block % motion)))
-      (catch IllegalStateException e nil))))
+        rotation (swap! current-block #(rotate-block % rotation))
+        motion (swap! current-block #(move-block % motion)))
+      (catch IllegalStateException e
+        (when (= :down motion) (next-block))))))
 
 ;; Drawing
 
@@ -111,7 +124,7 @@
   []
   (qc/stroke 0 0 0)
   (qc/fill 255 255 255 153)
-  (dorun (map draw-cube-at (block-cubes @example-block))))
+  (dorun (map draw-cube-at (block-cubes @current-block))))
 
 (defn draw []
   (qc/background 127 127 127)
