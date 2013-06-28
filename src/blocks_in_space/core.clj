@@ -37,6 +37,25 @@
                       :down (fn [[x y z]] [x y (dec z)])}]
     (assoc block :center ((movement-fns direction) (:center block)))))
 
+;; Boundaries
+
+(def x-size 5)
+(def y-size x-size)
+(def z-size 10)
+
+(def wall-cubes
+  (letfn [(outer-coord [size] (/ (inc size) 2))
+          (wall-edges [size] [(outer-coord size) (neg (outer-coord size))])
+          (full-wall [size] (range (neg (outer-coord size)) (inc (outer-coord size))))]
+    (set
+      (concat
+        (for [x (wall-edges x-size) y (full-wall y-size) z (range (neg z-size) (inc 0))]
+          [x y z])
+        (for [x (full-wall x-size) y (wall-edges y-size) z (range (neg z-size) (inc 0))]
+          [x y z])
+        (for [x (full-wall x-size) y (full-wall y-size)]
+          [x y (neg z-size)])))))
+
 ;; Input
 
 (def rotation-keybindings
@@ -75,14 +94,26 @@
   (qc/box grid-scale)
   (qc/pop-matrix))
 
-(defn draw []
-  (qc/background 127 127 127)
-  (qc/translate (map #(/ % 2) window-size))
+(defn draw-walls
+  []
+  (qc/stroke 0 0 255)
+  (qc/fill 63 63 63)
+  (dorun (map draw-cube-at wall-cubes)))
+
+(defn draw-blocks
+  []
   (qc/stroke 0 0 0)
   (qc/fill 255 255 255 153)
   (dorun (map draw-cube-at (block-cubes @example-block))))
 
+(defn draw []
+  (qc/background 127 127 127)
+  (qc/translate (map #(/ % 2) window-size))
+  (draw-walls)
+  (draw-blocks))
+
 (defn setup []
+  (qc/smooth)
   (qc/frame-rate 24))
 
 ;; Startup
