@@ -5,38 +5,6 @@
 
 (defn neg [x] (* -1 x))
 
-;; Block manipulation
-
-(def example-block (atom {:center [0 0 0] :shape #{[0 0 0] [1 0 0] [0 1 0] [1 -1 0]}}))
-
-(defn block-cubes
-  "Return the set of locations of cubes in the block"
-  [block]
-  (set (map #(map + (:center block) %) (:shape block))))
-
-(defn rotate-block
-  "Rotate the given block one of: :clockwise :counterclockwise :north :east :south :west"
-  [block direction]
-  (let [rotation-fns {:clockwise (fn [[x y z]] [(neg y) x z])
-                      :counterclockwise (fn [[x y z]] [y (neg x) z])
-                      :north (fn [[x y z]] [x (neg z) y])
-                      :east (fn [[x y z]] [z y (neg x)])
-                      :south (fn [[x y z]] [x z (neg y)])
-                      :west (fn [[x y z]] [(neg z) y x])}
-        transform-cube (rotation-fns direction)
-        transform-shape #(map transform-cube %)]
-    (assoc block :shape (set (transform-shape (:shape block))))))
-
-(defn move-block
-  "Move the given block one of: :north :east :south :west :down"
-  [block direction]
-  (let [movement-fns {:north (fn [[x y z]] [x (dec y) z])
-                      :east (fn [[x y z]] [(inc x) y z])
-                      :south (fn [[x y z]] [x (inc y) z])
-                      :west (fn [[x y z]] [(dec x) y z])
-                      :down (fn [[x y z]] [x y (dec z)])}]
-    (assoc block :center ((movement-fns direction) (:center block)))))
-
 ;; Boundaries
 
 (def x-size 5)
@@ -55,6 +23,43 @@
           [x y z])
         (for [x (full-wall x-size) y (full-wall y-size)]
           [x y (neg z-size)])))))
+
+;; Block manipulation
+
+(defn block-cubes
+  "Return the set of locations of cubes in the block"
+  [block]
+  (set (map #(map + (:center block) %) (:shape block))))
+
+(defn legal?
+  [block]
+  (not-any? wall-cubes (block-cubes block)))
+
+(def example-block (atom {:center [0 0 0] :shape #{[0 0 0] [1 0 0] [0 1 0] [1 -1 0]}}
+                         :validator legal?))
+
+(defn rotate-block
+  "Rotate the given block one of: :clockwise :counterclockwise :north :east :south :west"
+  [block direction]
+  (let [rotation-fns {:clockwise (fn [[x y z]] [(neg y) x z])
+                      :counterclockwise (fn [[x y z]] [y (neg x) z])
+                      :north (fn [[x y z]] [x (neg z) y])
+                      :east (fn [[x y z]] [z y (neg x)])
+                      :south (fn [[x y z]] [x z (neg y)])
+                      :west (fn [[x y z]] [(neg z) y x])}
+        transform-cube (rotation-fns direction)
+        transform-shape #(map transform-cube %)]
+      (assoc block :shape (set (transform-shape (:shape block))))))
+
+(defn move-block
+  "Move the given block one of: :north :east :south :west :down"
+  [block direction]
+  (let [movement-fns {:north (fn [[x y z]] [x (dec y) z])
+                      :east (fn [[x y z]] [(inc x) y z])
+                      :south (fn [[x y z]] [x (inc y) z])
+                      :west (fn [[x y z]] [(dec x) y z])
+                      :down (fn [[x y z]] [x y (dec z)])}]
+      (assoc block :center ((movement-fns direction) (:center block)))))
 
 ;; Input
 
@@ -77,9 +82,11 @@
   (let [key-char (qc/raw-key)
         rotation (rotation-keybindings key-char)
         motion (motion-keybindings key-char)]
-    (cond
-      rotation (swap! example-block #(rotate-block % rotation))
-      motion (swap! example-block #(move-block % motion)))))
+    (try
+      (cond
+        rotation (swap! example-block #(rotate-block % rotation))
+        motion (swap! example-block #(move-block % motion)))
+      (catch IllegalStateException e nil))))
 
 ;; Drawing
 
@@ -96,7 +103,7 @@
 
 (defn draw-walls
   []
-  (qc/stroke 0 0 255)
+  (qc/stroke 255 255 255)
   (qc/fill 63 63 63)
   (dorun (map draw-cube-at wall-cubes)))
 
