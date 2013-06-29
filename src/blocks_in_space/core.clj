@@ -208,7 +208,7 @@
       :setup setup
       :draw draw
       :key-pressed handle-key-press
-      :renderer :p3d
+      :renderer :opengl
       :size window-size])
 
 (defn run
