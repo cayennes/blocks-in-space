@@ -42,9 +42,11 @@
 
 (defn legal?
   [block]
-  (not-any? wall-cubes (block-cubes block)))
+  (not-any? (clojure.set/union wall-cubes @old-cubes) (block-cubes block)))
 
 (def current-block (atom (random-block) :validator legal?))
+
+(def old-cubes (atom #{}))
 
 (defn rotate-block
   "Rotate the given block one of: :clockwise :counterclockwise :north :east :south :west"
@@ -71,6 +73,7 @@
 
 (defn next-block
   []
+  (swap! old-cubes (partial clojure.set/union (block-cubes @current-block)))
   (reset! current-block (random-block)))
 
 ;; Input
@@ -90,7 +93,7 @@
    \j :west
    \space :down})
 
-(defn handle-key-press [] ; TODO: this has too much logic
+(defn handle-key-press []
   (let [key-char (qc/raw-key)
         rotation (rotation-keybindings key-char)
         motion (motion-keybindings key-char)]
@@ -107,24 +110,41 @@
 
 (def grid-scale 50)
 
+(def gradient [[0x30 0x14 0x0F]
+               [0x4C 0x22 0x2A]
+               [0x60 0x37 0x4D]
+               [0x65 0x52 0x74]
+               [0x57 0x72 0x96]
+               [0x34 0x93 0xAA]
+               [0x07 0xB3 0xAC]
+               [0x44 0xCF 0x9C]
+               [0x8D 0xE8 0x82]
+               [0xDE 0xF9 0x68]])
+
+(defn level-color
+  [z]
+  (gradient (neg z)))
+
 (defn draw-cube-at
-  [loc]
+  [[x y z] stroke fill]
   (qc/push-matrix)
-  (qc/translate (map (partial * grid-scale) loc))
+  (qc/translate (map (partial * grid-scale) [x y z]))
+  (apply qc/stroke (if (= stroke :level) (level-color z) stroke))
+  (apply qc/fill (if (= fill :level) (level-color z) fill))
   (qc/box grid-scale)
   (qc/pop-matrix))
 
 (defn draw-walls
   []
-  (qc/stroke 255 255 255)
-  (qc/fill 63 63 63)
-  (dorun (map draw-cube-at wall-cubes)))
+  (let [fill [63 63 63]]
+    (dorun (map #(draw-cube-at % [255 255 255] fill) wall-cubes))))
 
 (defn draw-blocks
   []
-  (qc/stroke 0 0 0)
-  (qc/fill 255 255 255 153)
-  (dorun (map draw-cube-at (block-cubes @current-block))))
+  (let [stroke [0 0 0]
+        fill [255 255 255 153]]
+    (dorun (map #(draw-cube-at % stroke fill) (block-cubes @current-block)))
+    (dorun (map #(draw-cube-at % stroke :level) @old-cubes))))
 
 (defn draw []
   (qc/background 127 127 127)
