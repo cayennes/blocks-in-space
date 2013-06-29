@@ -51,12 +51,6 @@
   [block]
   (set (map #(map + (:center block) %) (:shape block))))
 
-(defn legal?
-  [block]
-  (not-any? (clojure.set/union wall-cubes @old-cubes) (block-cubes block)))
-
-(def current-block (atom (random-block) :validator legal?))
-
 (defn rotate-block
   "Rotate the given block one of: :clockwise :counterclockwise :north :east :south :west"
   [block direction]
@@ -82,8 +76,6 @@
 
 ;; Old cubes at the bottom
 
-(def old-cubes (atom #{}))
-
 (defn full-levels
   [cubes]
   (let [level-size (* x-size y-size)]
@@ -106,19 +98,27 @@
   [cubes]
   (first (drop-while full-levels (iterate remove-a-full-level cubes))))
 
+;; State
+
+(def old-cubes (atom #{}))
+
+(defn legal?
+  [block]
+  (not-any? (clojure.set/union wall-cubes @old-cubes) (block-cubes block)))
+
+(def current-block (atom (random-block) :validator legal?))
+
+(defn next-block
+  []
+  (swap! old-cubes (partial clojure.set/union (block-cubes @current-block)))
+  (reset! current-block (random-block)))
+
 (add-watch
   old-cubes
   :remove
   (fn [_ ref _ new]
     (when (full-levels new)
           (reset! ref (remove-full-levels new)))))
-
-;; Dealing with both current and old blocks
-
-(defn next-block
-  []
-  (swap! old-cubes (partial clojure.set/union (block-cubes @current-block)))
-  (reset! current-block (random-block)))
 
 ;; Input
 
