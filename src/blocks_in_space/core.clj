@@ -175,7 +175,7 @@
   (qc/translate (map (partial * grid-scale) [x y z]))
   (apply qc/stroke (if (= stroke :level) (level-color z) stroke))
   (apply qc/fill (if (= fill :level) (level-color z) fill))
-  (qc/box grid-scale)
+  (qc/box (dec grid-scale))
   (qc/pop-matrix))
 
 (defn draw-walls
@@ -186,12 +186,13 @@
 (defn draw-blocks
   []
   (let [stroke [0 0 0]
-        fill [255 255 255 153]]
-    (dorun (map #(draw-cube-at % stroke fill) (block-cubes @current-block)))
-    (dorun (map #(draw-cube-at % stroke :level) @old-cubes))))
+        fill [255 255 255 127]]
+    (dorun (map #(draw-cube-at % stroke :level) @old-cubes))
+    (dorun (map #(draw-cube-at % stroke fill) (block-cubes @current-block)))))
 
 (defn draw []
   (qc/background 127 127 127)
+  (qc/stroke-weight 2)
   (qc/translate (map #(/ % 2) window-size))
   (draw-walls)
   (draw-blocks))
