@@ -46,8 +46,6 @@
 
 (def current-block (atom (random-block) :validator legal?))
 
-(def old-cubes (atom #{}))
-
 (defn rotate-block
   "Rotate the given block one of: :clockwise :counterclockwise :north :east :south :west"
   [block direction]
@@ -70,6 +68,41 @@
                       :west (fn [[x y z]] [(dec x) y z])
                       :down (fn [[x y z]] [x y (dec z)])}]
       (assoc block :center ((movement-fns direction) (:center block)))))
+
+;; Old cubes at the bottom
+
+(def old-cubes (atom #{}))
+
+(defn full-levels
+  [cubes]
+  (let [level-size (* x-size y-size)]
+   (->> (group-by last cubes) ; group cubes by level (z-coordinate)
+        (filter (fn [[_ v]] (= level-size (count v)))) ; only the full ones
+        keys))) ; the level
+
+(defn remove-level
+  [level cubes]
+  (let [above (filter (fn [[_ _ z]] (> z level)) cubes)
+        below (filter (fn [[_ _ z]] (< z level)) cubes)]
+    (clojure.set/union below (map (fn [[x y z]] [x y (dec z)]) above))))
+
+(defn remove-a-full-level
+  [cubes]
+  (let [full-level (first (full-levels cubes))]
+    (when full-level (remove-level full-level cubes))))
+
+(defn remove-full-levels
+  [cubes]
+  (first (drop-while full-levels (iterate remove-a-full-level cubes))))
+
+(add-watch
+  old-cubes
+  :remove
+  (fn [_ ref _ new]
+    (when (full-levels new)
+          (reset! ref (remove-full-levels new)))))
+
+;; Dealing with both current and old blocks
 
 (defn next-block
   []
