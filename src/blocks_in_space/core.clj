@@ -90,15 +90,6 @@
         below (filter (fn [[_ _ z]] (< z level)) cubes)]
     (clojure.set/union below (map (fn [[x y z]] [x y (dec z)]) above))))
 
-(defn remove-a-full-level
-  [cubes]
-  (let [full-level (first (full-levels cubes))]
-    (when full-level (remove-level full-level cubes))))
-
-(defn remove-full-levels
-  [cubes]
-  (first (drop-while full-levels (iterate remove-a-full-level cubes))))
-
 ;; State
 
 (def old-cubes (atom #{}))
@@ -114,12 +105,15 @@
   (swap! old-cubes (partial clojure.set/union (block-cubes @current-block)))
   (reset! current-block (random-block)))
 
+(def cleared-planes (atom 0))
+
 (add-watch
   old-cubes
   :remove
-  (fn [_ ref _ new]
-    (when (full-levels new)
-          (reset! ref (remove-full-levels new)))))
+  (fn [_ reference _ new]
+    (when-let [full-level (first (full-levels new))]
+      (swap! cleared-planes inc)
+      (swap! reference #(remove-level full-level %)))))
 
 ;; Input
 
@@ -155,7 +149,7 @@
 
 (def window-size
   (vec (->> [x-size y-size]
-            (map (partial + 3))
+            (map (partial + 4))
             (map (partial * grid-scale)))))
 
 (def gradient [[0x30 0x14 0x0F]
@@ -194,9 +188,16 @@
     (dorun (map #(draw-cube-at % stroke :level) @old-cubes))
     (dorun (map #(draw-cube-at % stroke fill) (block-cubes @current-block)))))
 
+(defn draw-score
+  []
+  (qc/fill 255 255 255)
+  (qc/text (str @cleared-planes)
+           10 (* 0.5 (second window-size))))
+
 (defn draw []
-  (qc/background 127 127 127)
+  (qc/background 0 0 0)
   (qc/stroke-weight 2)
+  (draw-score)
   (qc/translate (map #(/ % 2) window-size))
   (draw-walls)
   (draw-blocks))
