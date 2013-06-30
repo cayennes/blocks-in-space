@@ -151,9 +151,12 @@
 
 ;; Drawing
 
-(def window-size [480 360])
-
 (def grid-scale 50)
+
+(def window-size
+  (vec (->> [x-size y-size]
+            (map (partial + 3))
+            (map (partial * grid-scale)))))
 
 (def gradient [[0x30 0x14 0x0F]
                [0x4C 0x22 0x2A]
