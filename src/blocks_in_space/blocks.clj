@@ -55,25 +55,131 @@
        (map first)))
 
 (def starting-shapes
-  (mapv parse-block-string ["xXxx"
+  (mapv parse-block-string ["X"
 
-                            "..x
+                            "Xx"
+
+                            "xXx"
+
+                            "Xx
+                             x "
+
+                            "xXxx"
+
+                            "xx
+                             Xx"
+
+                            "x..
                              xXx"
 
                             ".x.
                              xXx"
 
-                            "xx
-                             Xx"
-
                             ".xx
-                             xX."
+                             xX."]))
 
-                            "Xx x.
-                             x. .."
 
-                            ".. x.
-                             Xx x."
+(def additional-shapes
+  (map parse-block-string ["Xx x.
+                            x. .."
 
-                            ".. .x
-                             xX .x"]))
+                           ".. x.
+                            Xx x."
+
+                           ".. .x
+                            xX .x"
+
+                           "xxXxx"
+
+                           "xXxx
+                            x   "
+
+                           "xxx
+                            x,
+                            x  "
+
+                           "..x
+                            xXx
+                            x.."
+
+                           ".x.
+                            xXx
+                            x.."
+
+                           "x
+                            xXx
+                            x  "
+
+                           "x.x
+                            xXx"
+
+                           "xx
+                            xXx"
+
+                           ".x..
+                            xXxx"
+
+                           ".x.
+                            xXx
+                            .x."
+
+                           "x..
+                            xX.
+                            .xx"
+
+                           "xx..
+                            .Xxx"
+
+                           "xx ..
+                            Xx x."
+
+                           ".x. ...
+                            xXx .x."
+
+                           ".x. .x.
+                            xXx ..."
+
+                           ".x. ...
+                            xXx ..x"
+
+                           "x.. ...
+                            xXx x.."
+
+                           "..x ...
+                            xXx ..x"
+
+                           "x.. ...
+                            xXx .x."
+
+                           "..x ...
+                            xXx .x."
+
+                           "x.. ...
+                            xXx ..x"
+
+                           "..x ...
+                            xXx x.."
+
+                           ".xx ...
+                            xX. .x."
+
+                           "xx. ...
+                            .Xx .x."
+
+                           ".xx ...
+                            xX. x.."
+
+                           "xx. ...
+                            .Xx ..x"
+
+                           ".X. .xx
+                            xx. ..."
+
+                           ".X. xx.
+                            .xx ..."
+
+                           "x. x.
+                            Xx .x"
+
+                           ".x .x
+                            xX x."]))

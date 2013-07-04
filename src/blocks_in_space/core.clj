@@ -1,6 +1,6 @@
 (ns blocks-in-space.core
   (:use [blocks-in-space.blocks :only [block-cubes rotate-block move-block
-                                       starting-shapes]])
+                                       starting-shapes additional-shapes]])
   (:use [blocks-in-space.utility :only [neg]])
   (:require [quil.core :as qc]))
 
@@ -22,13 +22,6 @@
           [x y z])
         (for [x (full-wall x-size) y (full-wall y-size)]
           [x y (neg z-size)])))))
-
-;; Block manipulation
-
-(def blocks
-  (map (fn [s] {:center [0 0 0] :shape s}) starting-shapes))
-
-(defn random-block [] (rand-nth blocks))
 
 ;; Old cubes at the bottom
 
@@ -53,22 +46,43 @@
   [block]
   (not-any? (clojure.set/union wall-cubes @old-cubes) (block-cubes block)))
 
-(def current-block (atom (random-block) :validator legal?))
+(def current-possible-shapes (atom starting-shapes))
+
+(def future-shapes (atom additional-shapes))
+
+(defn new-random-block
+  []
+  {:center [0 0 0] :shape (rand-nth @current-possible-shapes)})
+
+(def current-block (atom (new-random-block) :validator legal?))
 
 (defn next-block
   []
   (swap! old-cubes (partial clojure.set/union (block-cubes @current-block)))
-  (reset! current-block (random-block)))
+  (reset! current-block (new-random-block)))
 
 (def cleared-planes (atom 0))
 
 (add-watch
   old-cubes
   :remove
-  (fn [_ reference _ new]
-    (when-let [full-level (first (full-levels new))]
+  (fn [_ reference _ new-value]
+    (when-let [full-level (first (full-levels new-value))]
       (swap! cleared-planes inc)
       (swap! reference #(remove-level full-level %)))))
+
+(defn another-possible-shape!
+  []
+  (when-let [next-shape (first @future-shapes)]
+    (swap! current-possible-shapes #(conj % next-shape))
+    (swap! future-shapes rest)))
+
+(add-watch
+  cleared-planes
+  :add-shape-every-planes
+  (fn [_ reference old-value new-value]
+    (when (> (quot new-value 3) (quot old-value 3))
+          (another-possible-shape!))))
 
 ;; Input
 
