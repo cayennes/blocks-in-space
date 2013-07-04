@@ -205,3 +205,15 @@
   []
   (at/stop-and-reset-pool! timer-pool :strategy :kill)
   (eval `(qc/defsketch main-sketch ~@sketch-options)))
+
+; exit from https://groups.google.com/forum/?fromgroups=#!topic/clj-processing/eY6FpVYX-XU
+;           https://www.refheap.com/9034
+
+(defn exit-on-close [sketch]
+  (let [frame (-> sketch .getParent .getParent .getParent .getParent)]
+    (.setDefaultCloseOperation frame javax.swing.JFrame/EXIT_ON_CLOSE)))
+
+(defn -main
+  "This is for running as a stand-alone app ($lein run or the uberjar)"
+  [& args]
+  (exit-on-close (apply qc/sketch sketch-options)))
