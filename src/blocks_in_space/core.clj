@@ -2,7 +2,8 @@
   (:use [blocks-in-space.blocks :only [block-cubes rotate-block move-block
                                        starting-shapes additional-shapes]])
   (:use [blocks-in-space.utility :only [neg]])
-  (:require [quil.core :as qc]))
+  (:require [quil.core :as qc])
+  (:require [overtone.at-at :as at]))
 
 ;; Boundaries
 
@@ -56,6 +57,11 @@
 
 (def current-block (atom (new-random-block) :validator legal?))
 
+(defn next-block
+  []
+  (swap! old-cubes (partial clojure.set/union (block-cubes @current-block)))
+  (reset! current-block (new-random-block)))
+
 (defn move-current-block
   [move-type direction]
   (try
@@ -66,11 +72,6 @@
       ; ignore most impossible movements but progress to next block when going
       ; down is impossible
       (when (= :down direction) (next-block)))))
-
-(defn next-block
-  []
-  (swap! old-cubes (partial clojure.set/union (block-cubes @current-block)))
-  (reset! current-block (new-random-block)))
 
 (def cleared-planes (atom 0))
 
@@ -94,6 +95,10 @@
   (fn [_ reference old-value new-value]
     (when (> (quot new-value 3) (quot old-value 3))
           (another-possible-shape!))))
+
+;; Secheduling
+
+(def timer-pool (at/mk-pool))
 
 ;; Input
 
@@ -181,7 +186,9 @@
 
 (defn setup []
   (qc/smooth)
-  (qc/frame-rate 24))
+  (qc/frame-rate 24)
+  ; drop current block every 2 seconds
+  (at/every 2000 #(move-current-block :translate :down) timer-pool))
 
 ;; Startup
 
@@ -196,4 +203,5 @@
 (defn run
   "This is for running via a repl connection with (run)"
   []
+  (at/stop-and-reset-pool! timer-pool :strategy :kill)
   (eval `(qc/defsketch main-sketch ~@sketch-options)))
