@@ -56,6 +56,17 @@
 
 (def current-block (atom (new-random-block) :validator legal?))
 
+(defn move-current-block
+  [move-type direction]
+  (try
+    (case move-type
+      :rotate (swap! current-block #(rotate-block % direction))
+      :translate (swap! current-block #(move-block % direction)))
+    (catch IllegalStateException e
+      ; ignore most impossible movements but progress to next block when going
+      ; down is impossible
+      (when (= :down direction) (next-block)))))
+
 (defn next-block
   []
   (swap! old-cubes (partial clojure.set/union (block-cubes @current-block)))
@@ -105,12 +116,9 @@
   (let [key-char (qc/raw-key)
         rotation (rotation-keybindings key-char)
         motion (motion-keybindings key-char)]
-    (try
-      (cond
-        rotation (swap! current-block #(rotate-block % rotation))
-        motion (swap! current-block #(move-block % motion)))
-      (catch IllegalStateException e
-        (when (= :down motion) (next-block))))))
+    (cond
+      rotation (move-current-block :rotate rotation)
+      motion (move-current-block :translate motion))))
 
 ;; Drawing
 
