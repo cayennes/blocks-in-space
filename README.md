@@ -41,8 +41,9 @@ Rotate counterclockwise and clockwise, respectively:
   top of the walls.  If you do the game will crash when the block tries to
   fall there.
 * First block has already started falling when the game finishes loading
+* Generated jar does not work
 
-Important missing features:
+### Important missing features:
 
 * Pause
 * Not only should the game not crash when you lose, it should let you start a

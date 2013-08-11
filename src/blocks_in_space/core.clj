@@ -3,7 +3,8 @@
                                        starting-shapes additional-shapes]])
   (:use [blocks-in-space.utility :only [neg]])
   (:require [quil.core :as qc])
-  (:require [overtone.at-at :as at]))
+  (:require [overtone.at-at :as at])
+  (:gen-class))
 
 ;; Boundaries
 
