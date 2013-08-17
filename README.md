@@ -1,6 +1,8 @@
-# blocks-in-space
+# Blocks in Space
 
-This game is heaveily based on xblockout and is like tetris with an extra
+![screenshot illustrating height coloring](doc/colored-heights.png)
+
+This game is heavily based on xblockout and is like tetris with an extra
 dimension: blocks move in space rather than in a plane.  Fill up a plane at
 the bottom instead of merely a row in order to make it disappear.
 
@@ -10,9 +12,9 @@ increase.  Instead the complexity of the blocks themselves does.
 I am writing this in order to learn clojure while at the same time creating a
 game that I'd like to play.  It's in an early development state.
 
-## Usage
+![screenshot illustrating non-flat block](doc/3d-block.png)
 
-Keybindings:
+## Keybindings
 
 Move:
 
