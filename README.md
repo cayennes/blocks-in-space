@@ -39,9 +39,6 @@ Rotate counterclockwise and clockwise, respectively:
 * When you lose, the game crashes
 * Rather than moving as necessary, blocks simply don't rotate at all if you
   attempt to rotate next to a wall that they would rotate into
-* For just a couple shapes, it's possible to rotate part of the block over the
-  top of the walls.  If you do the game will crash when the block tries to
-  fall there.
 * First block has already started falling when the game finishes loading
 * Generated jar does not work
 

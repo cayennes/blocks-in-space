@@ -12,10 +12,11 @@
 (def y-size x-size)
 (def z-size 10)
 
+(def center (mapv #(quot % 2) [x-size y-size]))
+
 (def wall-cubes
-  (letfn [(outer-coord [size] (/ (inc size) 2))
-          (wall-edges [size] [(outer-coord size) (neg (outer-coord size))])
-          (full-wall [size] (range (neg (outer-coord size)) (inc (outer-coord size))))]
+  (letfn [(wall-edges [size] [-1 size])
+          (full-wall [size] (range -1 (inc size)))]
     (set
       (concat
         (for [x (wall-edges x-size) y (full-wall y-size) z (range (neg z-size) (inc 0))]
@@ -38,7 +39,8 @@
   [level cubes]
   (let [above (filter (fn [[_ _ z]] (> z level)) cubes)
         below (filter (fn [[_ _ z]] (< z level)) cubes)]
-    (clojure.set/union below (map (fn [[x y z]] [x y (dec z)]) above))))
+    (set
+      (clojure.set/union below (map (fn [[x y z]] [x y (dec z)]) above)))))
 
 ;; State
 
@@ -46,7 +48,15 @@
 
 (defn legal?
   [block]
-  (not-any? (clojure.set/union wall-cubes @old-cubes) (block-cubes block)))
+  (let [cubes (block-cubes block)]
+    (and
+      (not-any? (fn [[x y z]] (or (< x 0) ; within bounds
+                                  (< y 0)
+                                  (>= x x-size)
+                                  (>= y y-size)
+                                  (<= z (neg z-size))))
+                cubes)
+      (not-any? @old-cubes cubes)))) ; not in an already fallen block
 
 (def current-possible-shapes (atom starting-shapes))
 
@@ -54,7 +64,7 @@
 
 (defn new-random-block
   []
-  {:center [0 0 0] :shape (rand-nth @current-possible-shapes)})
+  {:center (conj center 0) :shape (rand-nth @current-possible-shapes)})
 
 (def current-block (atom (new-random-block) :validator legal?))
 
@@ -131,9 +141,9 @@
 (def grid-scale 50)
 
 (def window-size
-  (vec (->> [x-size y-size]
-            (map (partial + 4))
-            (map (partial * grid-scale)))))
+  (->> [x-size y-size]
+       (map (partial + 2))
+       (mapv (partial * grid-scale))))
 
 (def gradient [[0x30 0x14 0x0F]
                [0x4C 0x22 0x2A]
@@ -181,7 +191,10 @@
   (qc/background 0 0 0)
   (qc/stroke-weight 2)
   (draw-score)
-  (qc/translate (map #(/ % 2) window-size))
+  (qc/translate ; everything offset by half a cube because they draw from the center
+    [(* grid-scale 1.5) ; also allow space for tops of walls
+     (* grid-scale 1.5)
+     (* grid-scale -0.5)]) ; so that the top of the walls are in the plane of the window
   (draw-walls)
   (draw-blocks))
 
