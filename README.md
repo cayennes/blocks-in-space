@@ -36,7 +36,6 @@ Rotate counterclockwise and clockwise, respectively:
 
 ## Known Bugs
 
-* When you lose, the game crashes
 * Rather than moving as necessary, blocks simply don't rotate at all if you
   attempt to rotate next to a wall that they would rotate into
 * First block has already started falling when the game finishes loading
@@ -45,8 +44,7 @@ Rotate counterclockwise and clockwise, respectively:
 ### Important missing features:
 
 * Pause
-* Not only should the game not crash when you lose, it should let you start a
-  new one
+* Ability to start a new game after losing
 * A way to quickly drop all the way instead of just one level
 * A color key to block height (at least it's a spectrum unlike xblockout, but
   if there's a situation where there might be no blocks on a certain level it
@@ -57,6 +55,7 @@ Rotate counterclockwise and clockwise, respectively:
 * Tests (while I don't mind lots of manual testing since the point is that I
   enjoy playing it, eventually I should figure out what kind of tests are best
   for functional programming.)
+* Display text with nice looking font/size/position/color
 
 ## License
 

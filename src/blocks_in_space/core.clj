@@ -62,6 +62,8 @@
 
 (def future-shapes (atom additional-shapes))
 
+(def status-message (atom ""))
+
 (defn new-random-block
   []
   {:center (conj center 0) :shape (rand-nth @current-possible-shapes)})
@@ -71,7 +73,9 @@
 (defn next-block
   []
   (swap! old-cubes (partial clojure.set/union (block-cubes @current-block)))
-  (reset! current-block (new-random-block)))
+  (try (reset! current-block (new-random-block))
+       (catch IllegalStateException e
+         (reset! status-message "game over"))))
 
 (defn move-current-block
   [move-type direction]
@@ -181,16 +185,17 @@
     (dorun (map #(draw-cube-at % stroke :level) @old-cubes))
     (dorun (map #(draw-cube-at % stroke fill) (block-cubes @current-block)))))
 
-(defn draw-score
+(defn draw-text
   []
   (qc/fill 255 255 255)
   (qc/text (str @cleared-planes)
-           10 (* 0.5 (second window-size))))
+           10 (* 0.5 (second window-size)))
+  (qc/text @status-message (* 2.5 grid-scale) (* 0.5 grid-scale)))
 
 (defn draw []
   (qc/background 0 0 0)
   (qc/stroke-weight 2)
-  (draw-score)
+  (draw-text)
   (qc/translate ; everything offset by half a cube because they draw from the center
     [(* grid-scale 1.5) ; also allow space for tops of walls
      (* grid-scale 1.5)
