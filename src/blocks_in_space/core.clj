@@ -220,7 +220,10 @@
       :size window-size])
 
 (defn run
-  "This is for running via a repl connection with (run)"
+  "This is for running via a repl connection with (run)
+  
+  For some reason - I think a quil bug - it doesn't always work when it has
+  been previously run in the same repl.  Trying again often succeeds."
   []
   (at/stop-and-reset-pool! timer-pool :strategy :kill)
   (eval `(qc/defsketch main-sketch ~@sketch-options)))
