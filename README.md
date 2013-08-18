@@ -42,7 +42,7 @@ Rotate counterclockwise and clockwise, respectively:
 
 ## Issues
 
-### Known Bugs
+### Known bugs
 
 * Rather than moving as necessary, blocks simply don't rotate at all if you
   attempt to rotate next to a wall that they would rotate into
@@ -55,13 +55,13 @@ Rotate counterclockwise and clockwise, respectively:
 * A way to quickly drop all the way instead of just one level
 * A color key to block height (at least it's a spectrum unlike xblockout, but
   if there's a situation where there might be no blocks on a certain level it
-  can be hard to tell.)
+  can be hard to tell)
 * Show keybindings in-game
 * Add more complex shapes indefinitely
 * Better code
 * Tests (while I don't mind lots of manual testing since the point is that I
   enjoy playing it, eventually I should figure out what kind of tests are best
-  for functional programming.)
+  for functional programming)
 * Display text with nice looking font/size/position/color
 * Stand-alone jar
 
