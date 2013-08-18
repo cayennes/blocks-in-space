@@ -14,7 +14,13 @@ game that I'd like to play.  It's in an early development state.
 
 ![screenshot illustrating non-flat block](doc/3d-block.png)
 
-## Keybindings
+## Usage
+
+Requires leiningen 2.  From source directory, start game with
+
+    $ lein run
+
+### Keybindings
 
 Move:
 
@@ -34,14 +40,15 @@ Rotate counterclockwise and clockwise, respectively:
 
     W   R
 
-## Known Bugs
+## Issues
+
+### Known Bugs
 
 * Rather than moving as necessary, blocks simply don't rotate at all if you
   attempt to rotate next to a wall that they would rotate into
 * First block has already started falling when the game finishes loading
-* Generated jar does not work
 
-### Important missing features:
+### Important missing features
 
 * Pause
 * Ability to start a new game after losing
@@ -56,6 +63,7 @@ Rotate counterclockwise and clockwise, respectively:
   enjoy playing it, eventually I should figure out what kind of tests are best
   for functional programming.)
 * Display text with nice looking font/size/position/color
+* Stand-alone jar
 
 ## License
 
