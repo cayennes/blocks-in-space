@@ -40,17 +40,19 @@ Rotate counterclockwise and clockwise, respectively:
 
     W   R
 
+Pause (also start game initially)
+
+    P
+
 ## Issues
 
 ### Known bugs
 
 * Rather than moving as necessary, blocks simply don't rotate at all if you
   attempt to rotate next to a wall that they would rotate into
-* First block has already started falling when the game finishes loading
 
 ### Important missing features
 
-* Pause
 * Ability to start a new game after losing
 * A way to quickly drop all the way instead of just one level
 * A color key to block height (at least it's a spectrum unlike xblockout, but
@@ -64,6 +66,7 @@ Rotate counterclockwise and clockwise, respectively:
   for functional programming)
 * Display text with nice looking font/size/position/color
 * Stand-alone jar
+* Pause should hide the current state; currently it's a bit like cheating
 
 ## License
 

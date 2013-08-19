@@ -42,6 +42,10 @@
     (set
       (clojure.set/union below (map (fn [[x y z]] [x y (dec z)]) above)))))
 
+;; Secheduling
+
+(def timer-pool (at/mk-pool))
+
 ;; State
 
 (def old-cubes (atom #{}))
@@ -62,7 +66,7 @@
 
 (def future-shapes (atom additional-shapes))
 
-(def status-message (atom ""))
+(def status-message (atom "press p to play"))
 
 (defn new-random-block
   []
@@ -111,34 +115,35 @@
     (when (> (quot new-value 3) (quot old-value 3))
           (another-possible-shape!))))
 
-;; Secheduling
+(def mode (atom :pause))
 
-(def timer-pool (at/mk-pool))
+(def modes
+  {:pause {:enter (fn []
+                    (at/stop-and-reset-pool! timer-pool :strategy :kill)
+                    (reset! status-message "paused"))
+           :keybindings {\p #(reset! mode :play)}}
+   :play {:enter (fn []
+                   (at/every 2000 #(move-current-block :translate :down) timer-pool)
+                   (reset! status-message ""))
+          :keybindings {\e #(move-current-block :rotate :north)
+                        \f #(move-current-block :rotate :east)
+                        \d #(move-current-block :rotate :south)
+                        \s #(move-current-block :rotate :west)
+                        \w #(move-current-block :rotate :counterclockwise)
+                        \r #(move-current-block :rotate :clockwise)
+                        \i #(move-current-block :translate :north)
+                        \l #(move-current-block :translate :east)
+                        \k #(move-current-block :translate :south)
+                        \j #(move-current-block :translate :west)
+                        \space #(move-current-block :translate :down)
+                        \p #(reset! mode :pause)}}})
 
-;; Input
-
-(def rotation-keybindings
-  {\e :north
-   \f :east
-   \d :south
-   \s :west
-   \w :counterclockwise
-   \r :clockwise})
-
-(def motion-keybindings
-  {\i :north
-   \l :east
-   \k :south
-   \j :west
-   \space :down})
-
-(defn handle-key-press []
-  (let [key-char (qc/raw-key)
-        rotation (rotation-keybindings key-char)
-        motion (motion-keybindings key-char)]
-    (cond
-      rotation (move-current-block :rotate rotation)
-      motion (move-current-block :translate motion))))
+(add-watch
+  mode
+  :change
+  (fn [_ _ old-value new-value]
+    (if (not= old-value new-value)
+        ((get-in modes [new-value :enter])))))
 
 ;; Drawing
 
@@ -205,9 +210,7 @@
 
 (defn setup []
   (qc/smooth)
-  (qc/frame-rate 24)
-  ; drop current block every 2 seconds
-  (at/every 2000 #(move-current-block :translate :down) timer-pool))
+  (qc/frame-rate 24))
 
 ;; Startup
 
@@ -215,7 +218,9 @@
      [:title "Blocks in Space"
       :setup setup
       :draw draw
-      :key-pressed handle-key-press
+      :key-pressed #((get-in modes
+                             [@mode :keybindings (qc/raw-key)]
+                             (fn [])))
       :renderer :opengl
       :size window-size])
 
