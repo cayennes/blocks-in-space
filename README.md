@@ -16,9 +16,36 @@ game that I'd like to play.  It's in an early development state.
 
 ## Usage
 
-Requires leiningen 2.  From source directory, start game with
+### Running the game
+
+Requires [leiningen 2](http://leiningen.org/#install).  From source directory, start game with
 
     $ lein run
+
+### How the game works
+
+Blocks appear at the "top" (screen-direction) and "fall" towards the "bottom"
+(away from the screen).  The current falling block is semi-transparent so that
+you can see the what exists at the bottom.  Blocks that have already fallen
+change color, with colors indicating the height of each cube (light and yellow
+at the bottom, dark and red at the top, moving through most of the spectrum in
+between.)
+
+I have been told there are people that have never played tetris, but I'm not
+sure I believe it.  Just in case:
+
+* You lose if the blocks stack up over the top of the grid area.
+
+* You avoid this by filling in a complete plane at any height, which makes all
+  those cubes disappear and those above fall to fill the gap.  Your score is
+  the number of times you do this, and is indicated by a number on the left
+  side of the screen.
+
+Besides the obvious addition of a dimension, this game has one important
+difference from tetris:
+
+* As you clear planes and progress in the game, you will start seeing more and
+  more complex blocks.
 
 ### Keybindings
 
@@ -27,7 +54,7 @@ Move:
       I
     J K L
 
-Move down (into the screen):
+Move down:
 
     space
 
