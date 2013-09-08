@@ -77,6 +77,8 @@ Pause (also start game initially)
 
 * Rather than moving as necessary, blocks simply don't rotate at all if you
   attempt to rotate next to a wall that they would rotate into
+* Sometimes possible to play a little more after game over
+* Blocks at top show wrong color at game over
 
 ### Important missing features
 
