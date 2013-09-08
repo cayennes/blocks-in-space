@@ -167,7 +167,9 @@
 
 (defn level-color
   [z]
-  (gradient (neg z)))
+  (try (gradient (neg z))
+       (catch IndexOutOfBoundsException e
+         (first gradient))))
 
 (defn draw-cube-at
   [[x y z] stroke fill]
