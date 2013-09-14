@@ -1,18 +1,15 @@
 (ns blocks-in-space.core
-  (:use [blocks-in-space.blocks :only [block-cubes rotate-block move-block
-                                       starting-shapes additional-shapes]])
   (:use [blocks-in-space.utility :only [neg]])
+  (:use [blocks-in-space.game-state :only [x-size y-size z-size
+                                           set-mode! get-mode get-status-message
+                                           get-cleared-planes
+                                           move-current-block!
+                                           get-frozen-cubes get-falling-cubes]])
+  (:require [clojure.set :as set])
   (:require [quil.core :as qc])
-  (:require [overtone.at-at :as at])
   (:gen-class))
 
 ;; Boundaries
-
-(def x-size 5)
-(def y-size x-size)
-(def z-size 10)
-
-(def center (mapv #(quot % 2) [x-size y-size]))
 
 (def wall-cubes
   (letfn [(wall-edges [size] [-1 size])
@@ -25,125 +22,6 @@
           [x y z])
         (for [x (full-wall x-size) y (full-wall y-size)]
           [x y (neg z-size)])))))
-
-;; Old cubes at the bottom
-
-(defn full-levels
-  [cubes]
-  (let [level-size (* x-size y-size)]
-   (->> (group-by last cubes) ; group cubes by level (z-coordinate)
-        (filter (fn [[_ v]] (= level-size (count v)))) ; only the full ones
-        keys))) ; the level
-
-(defn remove-level
-  [level cubes]
-  (let [above (filter (fn [[_ _ z]] (> z level)) cubes)
-        below (filter (fn [[_ _ z]] (< z level)) cubes)]
-    (set
-      (clojure.set/union below (map (fn [[x y z]] [x y (dec z)]) above)))))
-
-;; Secheduling
-
-(def timer-pool (at/mk-pool))
-
-;; State
-
-(def old-cubes (atom #{}))
-
-(defn legal?
-  [block]
-  (let [cubes (block-cubes block)]
-    (and
-      (not-any? (fn [[x y z]] (or (< x 0) ; within bounds
-                                  (< y 0)
-                                  (>= x x-size)
-                                  (>= y y-size)
-                                  (<= z (neg z-size))))
-                cubes)
-      (not-any? @old-cubes cubes)))) ; not in an already fallen block
-
-(def current-possible-shapes (atom starting-shapes))
-
-(def future-shapes (atom additional-shapes))
-
-(def status-message (atom "press p to play"))
-
-(defn new-random-block
-  []
-  {:center (conj center 0) :shape (rand-nth @current-possible-shapes)})
-
-(def current-block (atom (new-random-block) :validator legal?))
-
-(defn next-block
-  []
-  (swap! old-cubes (partial clojure.set/union (block-cubes @current-block)))
-  (try (reset! current-block (new-random-block))
-       (catch IllegalStateException e
-         (reset! status-message "game over"))))
-
-(defn move-current-block
-  [move-type direction]
-  (try
-    (case move-type
-      :rotate (swap! current-block #(rotate-block % direction))
-      :translate (swap! current-block #(move-block % direction)))
-    (catch IllegalStateException e
-      ; ignore most impossible movements but progress to next block when going
-      ; down is impossible
-      (when (= :down direction) (next-block)))))
-
-(def cleared-planes (atom 0))
-
-(add-watch
-  old-cubes
-  :remove
-  (fn [_ reference _ new-value]
-    (when-let [full-level (first (full-levels new-value))]
-      (swap! cleared-planes inc)
-      (swap! reference #(remove-level full-level %)))))
-
-(defn another-possible-shape!
-  []
-  (when-let [next-shape (first @future-shapes)]
-    (swap! current-possible-shapes #(conj % next-shape))
-    (swap! future-shapes rest)))
-
-(add-watch
-  cleared-planes
-  :add-shape-every-planes
-  (fn [_ reference old-value new-value]
-    (when (> (quot new-value 3) (quot old-value 3))
-          (another-possible-shape!))))
-
-(def mode (atom :pause))
-
-(def modes
-  {:pause {:enter (fn []
-                    (at/stop-and-reset-pool! timer-pool :strategy :kill)
-                    (reset! status-message "paused"))
-           :keybindings {\p #(reset! mode :play)}}
-   :play {:enter (fn []
-                   (at/every 2000 #(move-current-block :translate :down) timer-pool)
-                   (reset! status-message ""))
-          :keybindings {\e #(move-current-block :rotate :north)
-                        \f #(move-current-block :rotate :east)
-                        \d #(move-current-block :rotate :south)
-                        \s #(move-current-block :rotate :west)
-                        \w #(move-current-block :rotate :counterclockwise)
-                        \r #(move-current-block :rotate :clockwise)
-                        \i #(move-current-block :translate :north)
-                        \l #(move-current-block :translate :east)
-                        \k #(move-current-block :translate :south)
-                        \j #(move-current-block :translate :west)
-                        \space #(move-current-block :translate :down)
-                        \p #(reset! mode :pause)}}})
-
-(add-watch
-  mode
-  :change
-  (fn [_ _ old-value new-value]
-    (if (not= old-value new-value)
-        ((get-in modes [new-value :enter])))))
 
 ;; Drawing
 
@@ -189,15 +67,15 @@
   []
   (let [stroke [0 0 0]
         fill [255 255 255 127]]
-    (dorun (map #(draw-cube-at % stroke :level) @old-cubes))
-    (dorun (map #(draw-cube-at % stroke fill) (block-cubes @current-block)))))
+    (dorun (map #(draw-cube-at % stroke :level) (get-frozen-cubes)))
+    (dorun (map #(draw-cube-at % stroke fill) (get-falling-cubes)))))
 
 (defn draw-text
   []
   (qc/fill 255 255 255)
-  (qc/text (str @cleared-planes)
+  (qc/text (str (get-cleared-planes))
            10 (* 0.5 (second window-size)))
-  (qc/text @status-message (* 2.5 grid-scale) (* 0.5 grid-scale)))
+  (qc/text (get-status-message) (* 2.5 grid-scale) (* 0.5 grid-scale)))
 
 (defn draw []
   (qc/background 0 0 0)
@@ -214,14 +92,31 @@
   (qc/smooth)
   (qc/frame-rate 24))
 
+;; Keybindings
+
+(def keybindings
+  {:pause {\p #(set-mode! :play)}
+   :play {\e #(move-current-block! :rotate :north)
+          \f #(move-current-block! :rotate :east)
+          \d #(move-current-block! :rotate :south)
+          \s #(move-current-block! :rotate :west)
+          \w #(move-current-block! :rotate :counterclockwise)
+          \r #(move-current-block! :rotate :clockwise)
+          \i #(move-current-block! :translate :north)
+          \l #(move-current-block! :translate :east)
+          \k #(move-current-block! :translate :south)
+          \j #(move-current-block! :translate :west)
+          \space #(move-current-block! :translate :down)
+          \p #(set-mode! :pause)}})
+
 ;; Startup
 
 (def sketch-options
      [:title "Blocks in Space"
       :setup setup
       :draw draw
-      :key-pressed #((get-in modes
-                             [@mode :keybindings (qc/raw-key)]
+      :key-pressed #((get-in keybindings
+                             [(get-mode) (qc/raw-key)]
                              (fn [])))
       :renderer :opengl
       :size window-size])
@@ -232,7 +127,6 @@
   For some reason - I think a quil bug - it doesn't always work when it has
   been previously run in the same repl.  Trying again often succeeds."
   []
-  (at/stop-and-reset-pool! timer-pool :strategy :kill)
   (eval `(qc/defsketch main-sketch ~@sketch-options)))
 
 ; exit from https://groups.google.com/forum/?fromgroups=#!topic/clj-processing/eY6FpVYX-XU
