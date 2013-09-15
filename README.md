@@ -10,7 +10,7 @@ However, unique to this game, the rate at which the blocks fall at doesn't
 increase.  Instead the complexity of the blocks themselves does.
 
 I am writing this in order to learn clojure while at the same time creating a
-game that I'd like to play.  It's in an early development state.
+game that I'd like to play.
 
 ![screenshot illustrating non-flat block](doc/3d-block.png)
 
@@ -77,12 +77,9 @@ Pause (also start game initially)
 
 * Rather than moving as necessary, blocks simply don't rotate at all if you
   attempt to rotate next to a wall that they would rotate into
-* Sometimes possible to play a little more after game over
-* Blocks at top show wrong color at game over
 
-### Important missing features
+### Missing features
 
-* Ability to start a new game after losing
 * A way to quickly drop all the way instead of just one level
 * A color key to block height (at least it's a spectrum unlike xblockout, but
   if there's a situation where there might be no blocks on a certain level it

@@ -17,6 +17,18 @@
 
 (def timer-pool (at/mk-pool))
 
+;; Modes
+
+(def mode (atom :new))
+
+(defn set-mode!
+  [new-mode]
+  (reset! mode new-mode))
+
+(defn get-mode
+  []
+  @mode)
+
 ;; Blocks
 
 (defn- full-levels
@@ -51,12 +63,6 @@
 
 (def future-shapes (atom additional-shapes))
 
-(def status-message (atom "press p to play"))
-
-(defn get-status-message
-  []
-  @status-message)
-
 (defn- new-random-block
   []
   {:center (conj center 0) :shape (rand-nth @current-possible-shapes)})
@@ -67,8 +73,7 @@
   []
   (swap! old-cubes (partial clojure.set/union (block-cubes @current-block)))
   (try (reset! current-block (new-random-block))
-       (catch IllegalStateException e
-         (reset! status-message "game over"))))
+       (catch IllegalStateException e (set-mode! :game-over))))
 
 (def cleared-planes (atom 0))
 
@@ -116,29 +121,35 @@
   []
   (block-cubes @current-block))
 
-;; Modes
+;; Mode handling
+
+(defn- start-falling
+  []
+  (at/every 2000 #(move-current-block! :translate :down) timer-pool))
+
+(defn- stop-falling
+  []
+  (at/stop-and-reset-pool! timer-pool :strategy :kill))
+
+(defn- initialize-game
+  []
+  (reset! old-cubes #{})
+  (reset! current-possible-shapes starting-shapes)
+  (reset! future-shapes additional-shapes)
+  (reset! current-block (new-random-block))
+  (reset! cleared-planes 0))
 
 (def modes
-  {:pause {:enter (fn []
-                    (at/stop-and-reset-pool! timer-pool :strategy :kill)
-                    (reset! status-message "paused"))}
-   :play {:enter (fn []
-                   (at/every 2000 #(move-current-block! :translate :down) timer-pool)
-                   (reset! status-message ""))}})
-
-(def mode (atom :pause))
+  {:new (fn [] (stop-falling)
+               (initialize-game))
+   :game-over (fn [] (stop-falling)
+                     (reset! current-block {:center center :cubes #{}}))
+   :pause stop-falling
+   :play start-falling})
 
 (add-watch
   mode
   :change
   (fn [_ _ old-value new-value]
     (if (not= old-value new-value)
-        ((get-in modes [new-value :enter])))))
-
-(defn set-mode!
-  [new-mode]
-  (reset! mode new-mode))
-
-(defn get-mode
-  []
-  @mode)
+        ((new-value modes)))))

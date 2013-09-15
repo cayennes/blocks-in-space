@@ -1,7 +1,7 @@
 (ns blocks-in-space.core
   (:use [blocks-in-space.utility :only [neg]])
   (:use [blocks-in-space.game-state :only [x-size y-size z-size
-                                           set-mode! get-mode get-status-message
+                                           set-mode! get-mode
                                            get-cleared-planes
                                            move-current-block!
                                            get-frozen-cubes get-falling-cubes]])
@@ -22,6 +22,16 @@
           [x y z])
         (for [x (full-wall x-size) y (full-wall y-size)]
           [x y (neg z-size)])))))
+
+;; Info
+
+(defn get-status-message
+  []
+  (let [messages {:new "press p to play"
+                  :game-over "game over! press n for a new game"
+                  :pause "paused"
+                  :play ""}]
+    ((get-mode) messages)))
 
 ;; Drawing
 
@@ -75,7 +85,7 @@
   (qc/fill 255 255 255)
   (qc/text (str (get-cleared-planes))
            10 (* 0.5 (second window-size)))
-  (qc/text (get-status-message) (* 2.5 grid-scale) (* 0.5 grid-scale)))
+  (qc/text (get-status-message) (* 1.5 grid-scale) (* 0.5 grid-scale)))
 
 (defn draw []
   (qc/background 0 0 0)
@@ -95,7 +105,8 @@
 ;; Keybindings
 
 (def keybindings
-  {:pause {\p #(set-mode! :play)}
+  {:new {\p #(set-mode! :play)}
+   :pause {\p #(set-mode! :play)}
    :play {\e #(move-current-block! :rotate :north)
           \f #(move-current-block! :rotate :east)
           \d #(move-current-block! :rotate :south)
@@ -107,7 +118,8 @@
           \k #(move-current-block! :translate :south)
           \j #(move-current-block! :translate :west)
           \space #(move-current-block! :translate :down)
-          \p #(set-mode! :pause)}})
+          \p #(set-mode! :pause)}
+    :game-over {\n #(set-mode! :new)}})
 
 ;; Startup
 
