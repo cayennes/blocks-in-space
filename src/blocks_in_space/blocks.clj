@@ -6,6 +6,11 @@
   [block]
   (set (map #(map + (:center block) %) (:shape block))))
 
+(defn make-block
+  [center shape]
+  {:center center
+   :shape shape})
+
 (defn rotate-block
   "Rotate the given block one of: :clockwise :counterclockwise :north :east :south :west"
   [block direction]

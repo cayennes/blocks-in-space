@@ -1,6 +1,6 @@
 (ns blocks-in-space.game-state
   (:use [blocks-in-space.blocks :only [block-cubes rotate-block move-block
-                                       starting-shapes additional-shapes]])
+                                       make-block starting-shapes additional-shapes]])
   (:use [blocks-in-space.utility :only [neg]])
   (:require [clojure.set :as set])
   (:require [overtone.at-at :as at]))
@@ -63,9 +63,8 @@
 
 (def future-shapes (atom additional-shapes))
 
-(defn- new-random-block
-  []
-  {:center (conj center 0) :shape (rand-nth @current-possible-shapes)})
+(defn- new-random-block []
+  (make-block (conj center 0) (rand-nth @current-possible-shapes)))
 
 (def current-block (atom (new-random-block) :validator legal?))
 
