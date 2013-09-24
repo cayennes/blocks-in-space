@@ -73,11 +73,6 @@ Pause (also start game initially)
 
 ## Issues
 
-### Known bugs
-
-* Rather than moving as necessary, blocks simply don't rotate at all if you
-  attempt to rotate next to a wall that they would rotate into
-
 ### Missing features
 
 * A way to quickly drop all the way instead of just one level

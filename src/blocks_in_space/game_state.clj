@@ -1,5 +1,5 @@
 (ns blocks-in-space.game-state
-  (:use [blocks-in-space.blocks :only [block-cubes rotate-block move-block
+  (:use [blocks-in-space.blocks :only [block-cubes rotate-block move-block shift-within-bounds
                                        make-block starting-shapes additional-shapes]])
   (:use [blocks-in-space.utility :only [neg]])
   (:require [clojure.set :as set])
@@ -105,7 +105,8 @@
   [move-type direction]
   (try
     (case move-type
-      :rotate (swap! current-block #(rotate-block % direction))
+      :rotate (swap! current-block #(shift-within-bounds (rotate-block % direction)
+                                                         0 0 (dec x-size) (dec y-size)))
       :translate (swap! current-block #(move-block % direction)))
     (catch IllegalStateException e
       ; ignore most impossible movements but progress to next block when going

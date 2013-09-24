@@ -34,6 +34,39 @@
                       :down (fn [[x y z]] [x y (dec z)])}]
       (assoc block :center ((movement-fns direction) (:center block)))))
 
+(defn shift-within-bounds
+  "Given some bounds and a block, return a similar block within those bounds.
+  Returns nil if not possible."
+  [block x-min y-min x-max y-max]
+  (letfn [(has-cubes-outside?
+            [b coord bound min-or-max]
+            (->> (block-cubes b)
+                 (map coord)
+                 (apply min-or-max)
+                 (min-or-max bound)
+                 (not= bound)))
+          (needed-shifts
+            [b]
+            (->> [[:north (has-cubes-outside? b second y-max max)]
+                  [:east (has-cubes-outside? b first x-min min)]
+                  [:south (has-cubes-outside? b second y-min min)]
+                  [:west (has-cubes-outside? b first x-max max)]]
+                 (filter second)
+                 (map first)
+                 (set)))
+          (legal? [b] (empty? (needed-shifts b)))
+          (one-shift [b]
+                     (let [shifts (needed-shifts b)]
+                       ; If it needs to shift in opposite directions, it just
+                       ; doesn't fit.  This is not an actual possibility in
+                       ; current game design.
+                       (if (or (and (:east shifts) (:west shifts))
+                               (and (:north shifts) (:south shifts)))
+                           nil
+                           (move-block b (first shifts)))))]
+    (->> (iterate one-shift block)
+         (filter #(or (= nil %) (legal? %)))
+         (first))))
 
 (defn parse-block-string
   "Take a string containing a human readable representation of a 3-dimensional
