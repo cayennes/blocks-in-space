@@ -1,6 +1,10 @@
 (ns blocks-in-space.blocks
   (:use [blocks-in-space.utility :only [neg]]))
 
+(def x first)
+(def y second)
+(def z last)
+
 (defn block-cubes
   "Return the set of locations of cubes in the block"
   [block]
@@ -47,12 +51,12 @@
                  (not= bound)))
           (needed-shifts
             [b]
-            (->> [[:north (has-cubes-outside? b second y-max max)]
-                  [:east (has-cubes-outside? b first x-min min)]
-                  [:south (has-cubes-outside? b second y-min min)]
-                  [:west (has-cubes-outside? b first x-max max)]]
-                 (filter second)
-                 (map first)
+            (->> [[:north (has-cubes-outside? b y y-max max)]
+                  [:east (has-cubes-outside? b x x-min min)]
+                  [:south (has-cubes-outside? b y y-min min)]
+                  [:west (has-cubes-outside? b x x-max max)]]
+                 (filter second); only the things that have shifts outside
+                 (map first); just the shift
                  (set)))
           (legal? [b] (empty? (needed-shifts b)))
           (one-shift [b]
@@ -86,7 +90,10 @@
        (apply concat) (apply concat)
        ; now we have tuples of coordinate and character
        ((fn [l]
-          (let [center (first (first (drop-while (fn [[v c]] (and (not= \, c) (not= \X c))) l)))]
+          (let [center (->> l
+                            (filter (fn [[v c]] (#{\, \X} c)))
+                            (first); the tuple with the desired character
+                            (first))]; its coordinate
           (map (fn [[v c]] [(map #(- %1 %2) v center) c]) l))))
        ; now it's shifted so that the X or , is at the center
        (filter (fn [[v c]] (or (= c \x) (= c \X))))
