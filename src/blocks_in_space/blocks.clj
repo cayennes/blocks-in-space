@@ -5,19 +5,20 @@
 (def y second)
 (def z last)
 
-(defn block-cubes
-  "Return the set of locations of cubes in the block"
-  [block]
-  (set (map #(map + (:center block) %) (:shape block))))
+(def make-shape sorted-set)
 
 (defn make-block
   [center shape]
   {:center center
    :shape shape})
 
-(defn rotate-block
-  "Rotate the given block one of: :clockwise :counterclockwise :north :east :south :west"
-  [block direction]
+(defn block-cubes
+  "Return the set of locations of cubes in the block"
+  [block]
+  (set (map #(mapv + (:center block) %) (:shape block))))
+
+(defn rotate-shape
+  [shape direction]
   (let [rotation-fns {:clockwise (fn [[x y z]] [(neg y) x z])
                       :counterclockwise (fn [[x y z]] [y (neg x) z])
                       :north (fn [[x y z]] [x (neg z) y])
@@ -25,8 +26,13 @@
                       :south (fn [[x y z]] [x z (neg y)])
                       :west (fn [[x y z]] [(neg z) y x])}
         transform-cube (rotation-fns direction)
-        transform-shape #(map transform-cube %)]
-      (assoc block :shape (set (transform-shape (:shape block))))))
+        transform-shape #(mapv transform-cube %)]
+      (apply make-shape (transform-shape shape))))
+
+(defn rotate-block
+  "Rotate the given block one of: :clockwise :counterclockwise :north :east :south :west"
+  [block direction]
+  (assoc block :shape (rotate-shape (:shape block) direction)))
 
 (defn move-block
   "Move the given block one of: :north :east :south :west :down"
@@ -72,159 +78,107 @@
          (filter #(or (= nil %) (legal? %)))
          (first))))
 
-(defn parse-block-string
-  "Take a string containing a human readable representation of a 3-dimensional
-   block and return a vector of coordinates of cubes"
-  [block-str]
-  (->> block-str
-       (#(clojure.string/split % #"\n")) ; split the lines
-       (map #(clojure.string/split % #" +")) ; split the parts
-       (map (partial filter #(pos? (count %)))) ; drop remnants of initial whitespace
-       (map #(map seq %)) ; convert strings to lists of chars
-       ; now the outermost list represents y,
-       ;     the sublists z,
-       ;     and sublists of that represent x
-       (map-indexed (fn [y l] (map (partial map #(vector [y] %)) l)))
-       (map #(map-indexed (fn [z l] (map (fn [[[y] s]] [[y z] s]) l)) %))
-       (map (partial map #(map-indexed (fn [x [[y z] c]] [[x y z] c]) %)))
-       (apply concat) (apply concat)
-       ; now we have tuples of coordinate and character
-       ((fn [l]
-          (let [center (->> l
-                            (filter (fn [[v c]] (#{\, \X} c)))
-                            (first); the tuple with the desired character
-                            (first))]; its coordinate
-          (map (fn [[v c]] [(map #(- %1 %2) v center) c]) l))))
-       ; now it's shifted so that the X or , is at the center
-       (filter (fn [[v c]] (or (= c \x) (= c \X))))
-       (map first)))
+;;;; create complete sets of shapes
 
-(def starting-shapes
-  (mapv parse-block-string ["X"
+(defn width-in-dim
+  [shape coord]
+  (let [vals (map coord shape)]
+    (-> (- (apply max vals) (apply min vals))
+        (inc))))
 
-                            "Xx"
+(defn make-centered
+  "Shifts the block so that the center is in the middle of the width of each
+  dimension; if there are an even number of cubes it will choose the side
+  towards the center of mass"
+  [shape]
+  (let [center-points (mapv #(/ (+ (apply max (map % shape)) (apply min (map % shape))) 2)
+                            [x y z])
+        centerish-cubes (mapv #(vec [(int (Math/floor %)) (int (Math/ceil %))]) center-points)
+        center (mapv (fn [dim] (if (> (count (filter #(<= (dim %) (first (dim centerish-cubes)))
+                                                     shape))
+                                      (count (filter #(>= (dim %) (second (dim centerish-cubes)))
+                                                     shape)))
+                                   (first (dim centerish-cubes))
+                                   (second (dim centerish-cubes))))
+                     [x y z])]
+    (set (map (fn [cube] (mapv #(- %1 %2) cube center)) shape))))
 
-                            "xXx"
+(defn shape-score
+  "Gives a score (in the form of a vector) to shapes based on in this order:
 
-                            "Xx
-                             x "
+  * number of cubes
+  * flatness in z, y, and then x dimension
+  * lower center of mass in z, y, and then x dimension
+  * simple comparison of the shapes as ordered lists of blocks
 
-                            "xXxx"
+  When comparing non-equivalent shapes, this has the desired quality of
+  putting smaller and then flatter shapes first.
 
-                            "xx
-                             Xx"
+  When comparing equivalent shapes, this has the desired quality of selecting
+  an orientation relatively likely to show as much as possible of the
+  features, since it will firstly be as flat as possible in the z direction
+  and secondly have more cubes lower than higher.  Also, it will return 0 iff
+  one shape is merely a translation of the other."
+  [shape]
+  (let [s (make-centered shape)]
+    [(count s); number of cubes
+     (mapv #(width-in-dim s %) [z y x]); flatness
+     (mapv #(* -1 (apply + (% s))) [z y x]); proportional to center of mass
+     (vec (sort s))])); tie-breaker
 
-                            "x..
-                             xXx"
+(defn all-orientations
+  [shape]
+  (->>
+    (for [twist (map #(repeat % :clockwise) (range 4))
+          turn [[:north] [:east] [:south] [:west] [:north :north]]]
+      (let [rotations (concat twist turn)]
+        (first
+          (filter #(empty? (second %))
+                  (iterate (fn [[current-shape remaining-rotations]]
+                               [(rotate-shape current-shape (first remaining-rotations))
+                                (rest remaining-rotations)])
+                           [shape rotations])))))
+      (map first)
+      (set)))
 
-                            ".x.
-                             xXx"
+(defn normalize-shape; TODO: something is broken; this is not producing unique
+                     ; results.  lein test currently failing because of this
+                     ; (though making it pass does not guarantee correctness).
+  "given a shape, pick the best orientation for it and then center it on the origin"
+  [shape]
+  (->> shape
+       (all-orientations)
+       (reduce #(if (< (compare (shape-score %1) (shape-score %2)) 0)
+                    %1
+                    %2))
+       (make-centered)))
 
-                            ".xx
-                             xX."]))
+(defn all-additions
+  "The set of normalized shapes fitting within size 5 cube that can be created
+  by adding one cube"
+  [shape]
+  (set
+    (filter
+      #(and (> (count %) (count shape))
+            (<= (width-in-dim % x) 5)); TODO: 5 shouldn't really be set in this file at all
+      (for [cube shape
+            dim-count (range 3)
+            offset [-1 1]]
+        (let [new-cube (mapv + cube (concat (repeat dim-count 0) [offset 0 0]))]
+          (normalize-shape (conj shape new-cube)))))))
 
+(defn shapes-of-next-size
+  [shapes]
+  (->> shapes
+       (map all-additions)
+       (apply concat)
+       (set)
+       (sort-by shape-score)))
 
-(def additional-shapes
-  (map parse-block-string ["Xx x.
-                            x. .."
+(def all-shapes
+  (seque
+    (apply concat (iterate shapes-of-next-size [#{[0 0 0]}]))))
 
-                           ".. x.
-                            Xx x."
+(def starting-shapes (take-while #(= (width-in-dim % z) 1) all-shapes))
 
-                           ".. .x
-                            xX .x"
-
-                           "xxXxx"
-
-                           "xXxx
-                            x   "
-
-                           "xxx
-                            x,
-                            x  "
-
-                           "..x
-                            xXx
-                            x.."
-
-                           ".x.
-                            xXx
-                            x.."
-
-                           "x
-                            xXx
-                            x  "
-
-                           "x.x
-                            xXx"
-
-                           "xx
-                            xXx"
-
-                           ".x..
-                            xXxx"
-
-                           ".x.
-                            xXx
-                            .x."
-
-                           "x..
-                            xX.
-                            .xx"
-
-                           "xx..
-                            .Xxx"
-
-                           "xx ..
-                            Xx x."
-
-                           ".x. ...
-                            xXx .x."
-
-                           ".x. .x.
-                            xXx ..."
-
-                           ".x. ...
-                            xXx ..x"
-
-                           "x.. ...
-                            xXx x.."
-
-                           "..x ...
-                            xXx ..x"
-
-                           "x.. ...
-                            xXx .x."
-
-                           "..x ...
-                            xXx .x."
-
-                           "x.. ...
-                            xXx ..x"
-
-                           "..x ...
-                            xXx x.."
-
-                           ".xx ...
-                            xX. .x."
-
-                           "xx. ...
-                            .Xx .x."
-
-                           ".xx ...
-                            xX. x.."
-
-                           "xx. ...
-                            .Xx ..x"
-
-                           ".X. .xx
-                            xx. ..."
-
-                           ".X. xx.
-                            .xx ..."
-
-                           "x. x.
-                            Xx .x"
-
-                           ".x .x
-                            xX x."]))
+(def additional-shapes (drop-while #(= (width-in-dim % z) 1) all-shapes))

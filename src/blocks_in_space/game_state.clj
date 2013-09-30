@@ -11,7 +11,7 @@
 (def y-size x-size)
 (def z-size 10)
 
-(def center (mapv #(quot % 2) [x-size y-size]))
+(def center (mapv #(quot % 2) [x-size y-size 0]))
 
 ;; Secheduling
 
@@ -64,7 +64,7 @@
 (def future-shapes (atom additional-shapes))
 
 (defn- new-random-block []
-  (make-block (conj center 0) (rand-nth @current-possible-shapes)))
+  (make-block center (rand-nth @current-possible-shapes)))
 
 (def current-block (atom (new-random-block) :validator legal?))
 
@@ -84,7 +84,7 @@
       (swap! cleared-planes inc)
       (swap! reference #(remove-level full-level %)))))
 
-(defn- another-possible-shape!
+(defn another-possible-shape!
   []
   (when-let [next-shape (first @future-shapes)]
     (swap! current-possible-shapes #(conj % next-shape))
@@ -143,7 +143,7 @@
   {:new (fn [] (stop-falling)
                (initialize-game))
    :game-over (fn [] (stop-falling)
-                     (reset! current-block {:center center :cubes #{}}))
+                     (reset! current-block (make-block center #{})))
    :pause stop-falling
    :play start-falling})
 

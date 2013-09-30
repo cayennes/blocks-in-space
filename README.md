@@ -7,7 +7,10 @@ dimension: blocks move in space rather than in a plane.  Fill up a plane at
 the bottom instead of merely a row in order to make it disappear.
 
 However, unique to this game, the rate at which the blocks fall at doesn't
-increase.  Instead the complexity of the blocks themselves does.
+increase.  Instead the complexity of the blocks themselves does - theoretically
+you can eventually reach any block that is possible to rotate within the
+available space, and the laws of probability suggest that the game will become
+impossible long long before getting anywhere close to running out of blocks.
 
 I am writing this in order to learn clojure while at the same time creating a
 game that I'd like to play.
@@ -73,6 +76,11 @@ Pause (also start game initially)
 
 ## Issues
 
+### Known bugs
+
+* A few shapes appear in multiple starting orientations (counting as separate
+  shapes), and not all shapes are oriented ideally
+
 ### Missing features
 
 * A way to quickly drop all the way instead of just one level
@@ -80,7 +88,6 @@ Pause (also start game initially)
   if there's a situation where there might be no blocks on a certain level it
   can be hard to tell)
 * Show keybindings in-game
-* Add more complex shapes indefinitely
 * Better code
 * Tests (while I don't mind lots of manual testing since the point is that I
   enjoy playing it, eventually I should figure out what kind of tests are best
