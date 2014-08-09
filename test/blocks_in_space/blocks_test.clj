@@ -1,5 +1,8 @@
 (ns blocks-in-space.blocks-test
   (:require [clojure.test :refer :all]
+            [clojure.test.check.generators :as gen]
+            [clojure.test.check.properties :as prop]
+            [clojure.test.check.clojure-test :refer [defspec]]
             [blocks-in-space.blocks :refer :all]))
 
 (defn parse-block-string
@@ -160,14 +163,19 @@
                            ".x .x
                             xX x."]))
 
-(testing "sanity"
-  (deftest unique-normalized
-    (testing "normalizing all orientations has the same result"
-      (is (apply = (conj (map #(count (set (map normalize-shape (all-orientations %))))
-                              (concat manual-starting-shapes manual-additional-shapes))
-                         1)))))
-  (deftest fits-within-five
-    (testing "blocks will be possible to rotate in the given space"
-      (is (< (max (for [dim [x y z]
-                        shape (take-while #(<= (count %) 7) additional-shapes)]
-                    (width-in-dim shape dim))))))))
+(defn generated-shapes-in-size-range
+  [min-size max-size]
+  (gen/elements (->> all-shapes
+                     (drop-while #(<= (count %) min-size))
+                     (take-while #(<= (count %) max-size)))))
+
+(defn rotation-pairs; TODO: shifts as well as rotations
+  "generate pairs of shapes that are the same but (probably) rotated"
+  [shape-generator]
+  (gen/bind shape-generator
+            (fn [s] (gen/tuple (gen/return s)
+                               (gen/elements (all-orientations s))))))
+
+(defspec unique-normalized-under-rotation
+  (prop/for-all [[s1 s2] (rotation-pairs (generated-shapes-in-size-range 2 5))]
+                (= (normalize-shape s1) (normalize-shape s2))))
