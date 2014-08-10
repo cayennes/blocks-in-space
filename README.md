@@ -76,11 +76,6 @@ Pause (also start game initially)
 
 ## Issues
 
-### Known bugs
-
-* A few shapes appear in multiple starting orientations (counting as separate
-  shapes), and not all shapes are oriented ideally
-
 ### Missing features
 
 * A way to quickly drop all the way instead of just one level

@@ -91,12 +91,19 @@
   dimension; if there are an even number of cubes it will choose the side
   towards the center of mass"
   [shape]
-  (let [center-points (mapv #(/ (+ (apply max (map % shape)) (apply min (map % shape))) 2)
+  (let [center-points (mapv #(/ (+ (apply max (map % shape))
+                                   (apply min (map % shape)))
+                                2)
                             [x y z])
-        centerish-cubes (mapv #(vec [(int (Math/floor %)) (int (Math/ceil %))]) center-points)
-        center (mapv (fn [dim] (if (> (count (filter #(<= (dim %) (first (dim centerish-cubes)))
+        centerish-cubes (mapv #(vec [(int (Math/floor %)) (int (Math/ceil %))])
+                              center-points)
+        center (mapv (fn [dim] (if (> (count
+                                       (filter #(<= (dim %)
+                                                    (first (dim centerish-cubes)))
                                                      shape))
-                                      (count (filter #(>= (dim %) (second (dim centerish-cubes)))
+                                      (count
+                                       (filter #(>= (dim %)
+                                                    (second (dim centerish-cubes)))
                                                      shape)))
                                    (first (dim centerish-cubes))
                                    (second (dim centerish-cubes))))
@@ -130,7 +137,7 @@
   [shape]
   (->>
     (for [twist (map #(repeat % :clockwise) (range 4))
-          turn [[:north] [:east] [:south] [:west] [:north :north]]]
+          turn [[] [:north] [:east] [:south] [:west] [:north :north]]]
       (let [rotations (concat twist turn)]
         (first
           (filter #(empty? (second %))
@@ -141,17 +148,15 @@
       (map first)
       (set)))
 
-(defn normalize-shape; TODO: something is broken; this is not producing unique
-                     ; results.  lein test currently failing because of this
-                     ; (though making it pass does not guarantee correctness).
+(defn normalize-shape
   "given a shape, pick the best orientation for it and then center it on the origin"
   [shape]
   (->> shape
        (all-orientations)
+       (map make-centered)
        (reduce #(if (< (compare (shape-score %1) (shape-score %2)) 0)
                     %1
-                    %2))
-       (make-centered)))
+                    %2))))
 
 (defn all-additions
   "The set of normalized shapes fitting within size 5 cube that can be created

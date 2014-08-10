@@ -1,4 +1,4 @@
-(defproject blocks-in-space "0.3-SNAPSHOT"
+(defproject blocks-in-space "0.4"
   :description "A falling block game in 3D space"
   :url "https://github.com/cayennes/blocks-in-space"
   :license {:name "Eclipse Public License"
