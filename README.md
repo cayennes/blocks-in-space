@@ -1,3 +1,5 @@
+[![Circle CI](https://circleci.com/gh/cayennes/blocks-in-space.png?style=badge)](https://circleci.com/gh/cayennes/blocks-in-space)
+
 # Blocks in Space
 
 ![screenshot illustrating height coloring](doc/colored-heights.png)
