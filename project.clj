@@ -7,4 +7,7 @@
                  [quil "2.2.0"]
                  [overtone/at-at "1.2.0"]
                  [org.clojure/test.check "0.5.9"]]
-  :main blocks-in-space.core)
+  :main blocks-in-space.core
+
+  ; the only place this comes up is running in circle
+  :jvm-opts ["-Xmx2g"])
